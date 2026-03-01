@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>weMeeting — Salle de Réunion</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#1a1a2e">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -408,7 +411,22 @@ const SLOTS   = (H_END - H_START) * 2;
 let allRes    = [];
 let resById   = {};
 let modalId   = null;
-let curMonday = getMonday(new Date());
+// Semaine affichée par défaut :
+// - semaine en cours avant vendredi 18h00
+// - semaine suivante après vendredi 18h00
+function getDefaultMonday() {
+  const now = new Date();
+  const day = now.getDay(); // 0=dim, 1=lun ... 5=ven, 6=sam
+  const hour = now.getHours();
+  // Vendredi après 18h, samedi ou dimanche → semaine suivante
+  if ((day === 5 && hour >= 18) || day === 6 || day === 0) {
+    const next = new Date(now);
+    next.setDate(now.getDate() + (8 - (day === 0 ? 7 : day)));
+    return getMonday(next);
+  }
+  return getMonday(now);
+}
+let curMonday = getDefaultMonday();
 
 // ── UTILITAIRES ──
 function pad(n) { return String(n).padStart(2, '0'); }
@@ -820,6 +838,13 @@ async function doAnnuler() {
 
 // ── DÉMARRAGE ──
 init();
+
+// ── PWA : enregistrement service worker ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js')
+    .then(() => console.log('SW enregistré'))
+    .catch(e => console.log('SW erreur', e));
+}
 </script>
 </body>
 </html>
