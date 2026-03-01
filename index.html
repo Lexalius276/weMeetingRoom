@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>weRoom — Agenda Salle de Réunion</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1a2e;
+    --paper: #f5f2ed;
+    --accent: #c9a96e;
+    --accent-dark: #a8813f;
+    --accent-light: #f0e8d8;
+    --muted: #8a8070;
+    --card: #ffffff;
+    --border: #e0d9ce;
+    --danger: #c0392b;
+    --success: #27ae60;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--ink);
+    color: white;
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 20px rgba(26,26,46,0.3);
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+  }
+  .logo span { color: var(--accent); }
+
+  .header-right { display: flex; align-items: center; gap: 12px; }
+
+  .user-badge { font-size: 13px; color: rgba(255,255,255,0.6); }
+  .user-badge strong { color: var(--accent); font-weight: 500; }
+
+  .btn-logout {
+    font-size: 12px;
+    color: rgba(255,255,255,0.4);
+    text-decoration: none;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 2px;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn-logout:hover { color: white; border-color: rgba(255,255,255,0.4); }
+
+  /* DESKTOP LAYOUT */
+  .layout-desktop {
+    display: flex;
+    flex: 1;
+  }
+
+  .sidebar {
+    width: 300px;
+    min-width: 300px;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    padding: 28px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .sidebar-title {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .content {
+    flex: 1;
+    padding: 28px 32px;
+    overflow: auto;
+  }
+
+  /* FORMULAIRE */
+  .form-group { display: flex; flex-direction: column; gap: 7px; }
+
+  .form-group label {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 11px 12px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--paper);
+    width: 100%;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .form-group select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238a8070' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-color: var(--paper);
+    padding-right: 32px;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: white;
+  }
+
+  .form-group textarea { resize: vertical; min-height: 60px; }
+
+  .btn-reserver {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: var(--ink);
+    border: none;
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    touch-action: manipulation;
+  }
+  .btn-reserver:hover, .btn-reserver:active { background: var(--accent-dark); color: white; }
+
+  .message {
+    padding: 10px 14px;
+    border-radius: 2px;
+    font-size: 13px;
+    display: none;
+    line-height: 1.4;
+  }
+  .message.success { background: #eafaf1; color: var(--success); border-left: 3px solid var(--success); display: block; }
+  .message.error { background: #fdf0ee; color: var(--danger); border-left: 3px solid var(--danger); display: block; }
+
+  /* NAV SEMAINE */
+  .week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .week-nav h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 400;
+  }
+
+  .nav-btns { display: flex; gap: 8px; }
+
+  .nav-btn {
+    padding: 7px 14px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink);
+    transition: all 0.2s;
+    touch-action: manipulation;
+  }
+  .nav-btn:hover, .nav-btn:active { background: var(--ink); color: white; border-color: var(--ink); }
+  .nav-btn.today { background: var(--accent-light); border-color: var(--accent); color: var(--accent-dark); }
+
+  /* CALENDRIER DESKTOP */
+  .calendar-grid {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+
+  .cal-header {
+    display: grid;
+    grid-template-columns: 64px repeat(5, 1fr);
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .cal-header-time { background: var(--ink); padding: 12px 8px; }
+
+  .cal-day-header {
+    padding: 12px 16px;
+    background: var(--ink);
+    color: white;
+    text-align: center;
+    border-left: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .cal-day-header .day-name {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+  }
+
+  .cal-day-header .day-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    line-height: 1.1;
+  }
+
+  .cal-day-header.today .day-num { color: var(--accent); }
+
+  .cal-body {
+    display: grid;
+    grid-template-columns: 64px repeat(5, 1fr);
+    position: relative;
+  }
+
+  .time-col { border-right: 1px solid var(--border); }
+
+  .time-slot {
+    height: 48px;
+    padding: 4px 8px;
+    font-size: 11px;
+    color: var(--muted);
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+  }
+
+  .day-col { border-left: 1px solid var(--border); position: relative; }
+
+  .day-cell {
+    height: 48px;
+    border-bottom: 1px solid rgba(224,217,206,0.5);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .day-cell:hover { background: var(--accent-light); }
+  .day-cell.past { background: rgba(138,128,112,0.04); cursor: default; }
+  .day-cell.past:hover { background: rgba(138,128,112,0.04); }
+
+  .reservation-block {
+    position: absolute;
+    left: 3px; right: 3px;
+    background: var(--ink);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: 4px 8px;
+    z-index: 10;
+    cursor: pointer;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(26,26,46,0.2);
+  }
+  .reservation-block.mine { background: var(--accent-dark); border-left-color: white; }
+  .res-name { font-size: 11px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .res-objet { font-size: 10px; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* LISTE RESERVATIONS */
+  .section-title {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-weight: 500;
+  }
+
+  .res-list-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: 14px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: box-shadow 0.2s;
+    touch-action: manipulation;
+  }
+  .res-list-item:hover, .res-list-item:active { box-shadow: 0 2px 12px rgba(26,26,46,0.1); }
+  .res-list-item.mine { border-left-color: var(--ink); }
+
+  .res-info { flex: 1; min-width: 0; }
+  .ri-date { font-size: 12px; color: var(--muted); }
+  .ri-name { font-weight: 600; font-size: 14px; }
+  .ri-objet { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .ri-time {
+    font-family: 'Playfair Display', serif;
+    font-size: 17px;
+    color: var(--accent-dark);
+    white-space: nowrap;
+    margin-left: 12px;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,26,46,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: white;
+    border-radius: 2px;
+    padding: 32px;
+    max-width: 400px;
+    width: 100%;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(26,26,46,0.3);
+    animation: modalIn 0.2s ease;
+    border-top: 3px solid var(--accent);
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal h3 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 6px; }
+  .modal-meta { font-size: 13px; color: var(--muted); margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .modal-detail { margin-bottom: 12px; }
+  .modal-detail .lbl { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .modal-detail .val { font-size: 15px; margin-top: 2px; }
+  .modal-actions { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; }
+
+  .btn-annuler-res {
+    padding: 11px 20px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+    touch-action: manipulation;
+    flex: 1;
+  }
+
+  .btn-close-modal {
+    padding: 11px 20px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    touch-action: manipulation;
+    flex: 1;
+  }
+
+  /* ===== MOBILE ===== */
+  .mobile-layout { display: none; }
+
+  @media (max-width: 768px) {
+    .layout-desktop { display: none; }
+    .mobile-layout {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    /* Onglets mobile */
+    .mobile-tabs {
+      display: flex;
+      background: var(--card);
+      border-bottom: 2px solid var(--border);
+      position: sticky;
+      top: 56px;
+      z-index: 90;
+    }
+
+    .mobile-tab {
+      flex: 1;
+      padding: 14px;
+      text-align: center;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s;
+      touch-action: manipulation;
+    }
+
+    .mobile-tab.active {
+      color: var(--accent-dark);
+      border-bottom-color: var(--accent);
+    }
+
+    .mobile-panel {
+      display: none;
+      padding: 20px 16px;
+      flex: 1;
+    }
+
+    .mobile-panel.active { display: block; }
+
+    /* Formulaire mobile */
+    .mobile-form { display: flex; flex-direction: column; gap: 16px; }
+
+    .mobile-form .form-group input,
+    .mobile-form .form-group select {
+      font-size: 16px; /* évite le zoom auto iOS */
+      padding: 13px 12px;
+    }
+
+    .mobile-form .btn-reserver {
+      padding: 16px;
+      font-size: 15px;
+      margin-top: 4px;
+    }
+
+    /* Nav semaine mobile */
+    .mobile-week-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .mobile-week-label {
+      font-family: 'Playfair Display', serif;
+      font-size: 15px;
+      text-align: center;
+      flex: 1;
+      padding: 0 8px;
+    }
+
+    .nav-btn-sm {
+      padding: 8px 14px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      font-size: 16px;
+      cursor: pointer;
+      touch-action: manipulation;
+      color: var(--ink);
+    }
+
+    .mobile-today-btn {
+      width: 100%;
+      padding: 10px;
+      background: var(--accent-light);
+      border: 1px solid var(--accent);
+      border-radius: 2px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      color: var(--accent-dark);
+      cursor: pointer;
+      margin-bottom: 16px;
+      touch-action: manipulation;
+      text-align: center;
+    }
+
+    .user-badge { display: none; }
+
+    .modal { padding: 24px 20px; }
+    .modal-actions { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">we<span>Room</span></div>
+  <div class="header-right">
+    <div class="user-badge">Connecté·e en tant que <strong>{{ current_user }}</strong></div>
+    <a href="/logout" class="btn-logout">Déconnexion</a>
+  </div>
+</header>
+
+<!-- ===== DESKTOP ===== -->
+<div class="layout-desktop">
+  <div class="sidebar">
+    <div class="sidebar-title">Nouvelle réservation</div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="f-date">
+    </div>
+    <div class="form-group">
+      <label>Heure de début</label>
+      <select id="f-debut"></select>
+    </div>
+    <div class="form-group">
+      <label>Heure de fin</label>
+      <select id="f-fin"></select>
+    </div>
+    <div class="form-group">
+      <label>Objet <span style="color:var(--muted);font-size:10px;text-transform:none;">(optionnel)</span></label>
+      <textarea id="f-objet" placeholder="Réunion client, appel…"></textarea>
+    </div>
+    <div id="msg" class="message"></div>
+    <button class="btn-reserver" onclick="reserver('desktop')">Réserver la salle</button>
+  </div>
+
+  <div class="content">
+    <div class="week-nav">
+      <h2 id="week-label">Semaine du …</h2>
+      <div class="nav-btns">
+        <button class="nav-btn" onclick="changeWeek(-1)">← Préc.</button>
+        <button class="nav-btn today" onclick="goToday()">Aujourd'hui</button>
+        <button class="nav-btn" onclick="changeWeek(1)">Suiv. →</button>
+      </div>
+    </div>
+    <div class="calendar-grid">
+      <div class="cal-header" id="cal-header"></div>
+      <div class="cal-body" id="cal-body"></div>
+    </div>
+    <div class="section-title">Réservations de la semaine</div>
+    <div id="res-list"></div>
+  </div>
+</div>
+
+<!-- ===== MOBILE ===== -->
+<div class="mobile-layout">
+  <div class="mobile-tabs">
+    <div class="mobile-tab active" onclick="switchTab('reserver')">📅 Réserver</div>
+    <div class="mobile-tab" onclick="switchTab('agenda')">📋 Agenda</div>
+  </div>
+
+  <!-- Onglet Réserver -->
+  <div class="mobile-panel active" id="tab-reserver">
+    <div style="font-family:'Playfair Display',serif;font-size:18px;margin-bottom:20px;color:var(--ink);">
+      Réserver la salle
+    </div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px;">
+      Connecté·e en tant que <strong style="color:var(--ink);">{{ current_user }}</strong>
+    </div>
+    <div class="mobile-form">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="mf-date">
+      </div>
+      <div class="form-group">
+        <label>Heure de début</label>
+        <select id="mf-debut"></select>
+      </div>
+      <div class="form-group">
+        <label>Heure de fin</label>
+        <select id="mf-fin"></select>
+      </div>
+      <div class="form-group">
+        <label>Objet <span style="color:var(--muted);font-size:10px;text-transform:none;">(optionnel)</span></label>
+        <input type="text" id="mf-objet" placeholder="Réunion client, appel…">
+      </div>
+      <div id="mmsg" class="message"></div>
+      <button class="btn-reserver" onclick="reserver('mobile')">Réserver la salle</button>
+    </div>
+  </div>
+
+  <!-- Onglet Agenda -->
+  <div class="mobile-panel" id="tab-agenda">
+    <div class="mobile-week-nav">
+      <button class="nav-btn-sm" onclick="changeWeek(-1)">←</button>
+      <div class="mobile-week-label" id="m-week-label">…</div>
+      <button class="nav-btn-sm" onclick="changeWeek(1)">→</button>
+    </div>
+    <div class="mobile-today-btn" onclick="goToday()">Aujourd'hui</div>
+    <div class="section-title">Réservations</div>
+    <div id="m-res-list"></div>
+  </div>
+</div>
+
+<!-- MODAL DÉTAIL -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="m-objet">—</h3>
+    <div class="modal-meta" id="m-meta">—</div>
+    <div class="modal-detail">
+      <div class="lbl">Réservé par</div>
+      <div class="val" id="m-who">—</div>
+    </div>
+    <div class="modal-detail">
+      <div class="lbl">Créneau</div>
+      <div class="val" id="m-time">—</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-close-modal" onclick="closeModal()">Fermer</button>
+      <button class="btn-annuler-res" id="m-annuler" style="display:none" onclick="annulerFromModal()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CURRENT_USER = "{{ current_user }}";
+const HEURES = [];
+for (let h = 7; h <= 20; h++) {
+  HEURES.push(`${String(h).padStart(2,'0')}:00`);
+  if (h < 20) HEURES.push(`${String(h).padStart(2,'0')}:30`);
+}
+const HEURE_DEBUT_GRID = 7;
+const HEURE_FIN_GRID = 20;
+const SLOTS_COUNT = (HEURE_FIN_GRID - HEURE_DEBUT_GRID) * 2;
+const SLOT_HEIGHT = 48;
+
+let currentMonday = getMonday(new Date());
+let allReservations = [];
+let modalResId = null;
+
+function init() {
+  // Peupler tous les selects (desktop + mobile)
+  ['f-debut','f-fin','mf-debut','mf-fin'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    HEURES.forEach(h => { el.innerHTML += `<option value="${h}">${h}</option>`; });
+  });
+  document.getElementById('f-debut').value = "09:00";
+  document.getElementById('f-fin').value = "10:00";
+  document.getElementById('mf-debut').value = "09:00";
+  document.getElementById('mf-fin').value = "10:00";
+
+  const todayStr = formatDate(new Date());
+  ['f-date','mf-date'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = todayStr; el.min = todayStr; }
+  });
+
+  renderWeek();
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.mobile-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.mobile-panel').forEach(p => p.classList.remove('active'));
+  document.querySelector(`.mobile-tab[onclick*="${tab}"]`).classList.add('active');
+  document.getElementById(`tab-${tab}`).classList.add('active');
+}
+
+function getMonday(d) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = (day === 0) ? -6 : 1 - day;
+  dt.setDate(dt.getDate() + diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+
+function formatDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const dd = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${dd}`;
+}
+
+function changeWeek(dir) {
+  currentMonday.setDate(currentMonday.getDate() + dir * 7);
+  renderWeek();
+}
+
+function goToday() {
+  currentMonday = getMonday(new Date());
+  renderWeek();
+}
+
+function getWeekDates() {
+  const days = [];
+  for (let i = 0; i < 5; i++) {
+    const d = new Date(currentMonday);
+    d.setDate(d.getDate() + i);
+    days.push(d);
+  }
+  return days;
+}
+
+async function renderWeek() {
+  const days = getWeekDates();
+  const dateDebut = formatDate(days[0]);
+  const dateFin = formatDate(days[4]);
+  const today = formatDate(new Date());
+
+  const label = `${days[0].toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} – ${days[4].toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}`;
+
+  const wl = document.getElementById('week-label');
+  const mwl = document.getElementById('m-week-label');
+  if (wl) wl.textContent = `Semaine du ${label}`;
+  if (mwl) mwl.textContent = label;
+
+  const res = await fetch(`/api/reservations?date_debut=${dateDebut}&date_fin=${dateFin}`);
+  allReservations = await res.json();
+
+  renderDesktopCalendar(days, today);
+  renderList(days, 'res-list');
+  renderList(days, 'm-res-list');
+}
+
+function renderDesktopCalendar(days, today) {
+  const header = document.getElementById('cal-header');
+  const body = document.getElementById('cal-body');
+  if (!header || !body) return;
+
+  header.innerHTML = `<div class="cal-header-time"></div>`;
+  days.forEach(d => {
+    const ds = formatDate(d);
+    const isToday = ds === today;
+    const dayName = d.toLocaleDateString('fr-FR', { weekday: 'short' });
+    header.innerHTML += `
+      <div class="cal-day-header ${isToday ? 'today' : ''}">
+        <div class="day-name">${dayName}</div>
+        <div class="day-num">${d.getDate()}</div>
+      </div>`;
+  });
+
+  body.innerHTML = '';
+  const timeCol = document.createElement('div');
+  timeCol.className = 'time-col';
+  for (let i = 0; i < SLOTS_COUNT; i++) {
+    const h = HEURE_DEBUT_GRID + Math.floor(i / 2);
+    const m = (i % 2) * 30;
+    const label = m === 0 ? `${String(h).padStart(2,'0')}:00` : '';
+    timeCol.innerHTML += `<div class="time-slot">${label}</div>`;
+  }
+  body.appendChild(timeCol);
+
+  days.forEach(d => {
+    const ds = formatDate(d);
+    const isPast = ds < today;
+    const col = document.createElement('div');
+    col.className = 'day-col';
+    col.style.position = 'relative';
+
+    for (let i = 0; i < SLOTS_COUNT; i++) {
+      const h = HEURE_DEBUT_GRID + Math.floor(i / 2);
+      const m = (i % 2) * 30;
+      const slotTime = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+      const cell = document.createElement('div');
+      cell.className = `day-cell${isPast ? ' past' : ''}`;
+      if (!isPast) {
+        cell.onclick = () => quickFill(ds, slotTime);
+      }
+      col.appendChild(cell);
+    }
+
+    allReservations.filter(r => r.date === ds).forEach(r => {
+      col.appendChild(buildResBlock(r));
+    });
+
+    body.appendChild(col);
+  });
+}
+
+function timeToSlot(t) {
+  const [h, m] = t.split(':').map(Number);
+  return (h - HEURE_DEBUT_GRID) * 2 + (m / 30);
+}
+
+function buildResBlock(r) {
+  const startSlot = timeToSlot(r.heure_debut);
+  const endSlot = timeToSlot(r.heure_fin);
+  const block = document.createElement('div');
+  block.className = `reservation-block${r.collaborateur === CURRENT_USER ? ' mine' : ''}`;
+  block.style.top = `${startSlot * SLOT_HEIGHT}px`;
+  block.style.height = `${Math.max((endSlot - startSlot) * SLOT_HEIGHT - 4, 20)}px`;
+  block.innerHTML = `<div class="res-name">${r.collaborateur}</div><div class="res-objet">${r.objet}</div>`;
+  block.onclick = (e) => { e.stopPropagation(); openModal(r); };
+  return block;
+}
+
+function renderList(days, targetId) {
+  const list = document.getElementById(targetId);
+  if (!list) return;
+  const daySet = new Set(days.map(d => formatDate(d)));
+  const weekRes = allReservations
+    .filter(r => daySet.has(r.date))
+    .sort((a, b) => (a.date + a.heure_debut).localeCompare(b.date + b.heure_debut));
+
+  if (weekRes.length === 0) {
+    list.innerHTML = `<div style="color:var(--muted);font-size:14px;padding:16px 0;">Aucune réservation cette semaine.</div>`;
+    return;
+  }
+
+  list.innerHTML = weekRes.map(r => {
+    const parts = r.date.split('-');
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    const mine = r.collaborateur === CURRENT_USER;
+    const rJson = JSON.stringify(r).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    return `
+      <div class="res-list-item ${mine ? 'mine' : ''}" onclick="openModal(${rJson})">
+        <div class="res-info">
+          <div class="ri-date">${dateStr.charAt(0).toUpperCase() + dateStr.slice(1)}</div>
+          <div class="ri-name">${r.collaborateur}</div>
+          <div class="ri-objet">${r.objet}</div>
+        </div>
+        <div class="ri-time">${r.heure_debut}–${r.heure_fin}</div>
+      </div>`;
+  }).join('');
+}
+
+function quickFill(date, heure) {
+  document.getElementById('f-date').value = date;
+  document.getElementById('f-debut').value = heure;
+  const [h, m] = heure.split(':').map(Number);
+  const finH = h + 1;
+  if (finH <= 20) {
+    document.getElementById('f-fin').value = `${String(finH).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  }
+}
+
+async function reserver(source) {
+  const isDesktop = source === 'desktop';
+  const date  = document.getElementById(isDesktop ? 'f-date'  : 'mf-date').value;
+  const debut = document.getElementById(isDesktop ? 'f-debut' : 'mf-debut').value;
+  const fin   = document.getElementById(isDesktop ? 'f-fin'   : 'mf-fin').value;
+  const objet = document.getElementById(isDesktop ? 'f-objet' : 'mf-objet').value;
+  const msgId = isDesktop ? 'msg' : 'mmsg';
+
+  showMsg(msgId, '', '');
+
+  const res = await fetch('/api/reserver', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ date, heure_debut: debut, heure_fin: fin, objet })
+  });
+
+  const data = await res.json();
+  if (data.success) {
+    showMsg(msgId, 'Salle réservée avec succès !', 'success');
+    document.getElementById(isDesktop ? 'f-objet' : 'mf-objet').value = '';
+    const parts = date.split('-');
+    currentMonday = getMonday(new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])));
+    renderWeek();
+    // Sur mobile, basculer sur l'onglet agenda après réservation
+    if (!isDesktop) setTimeout(() => switchTab('agenda'), 1200);
+  } else {
+    showMsg(msgId, data.error || 'Erreur inconnue', 'error');
+  }
+}
+
+function showMsg(id, text, type) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.textContent = text;
+  el.className = `message ${type}`;
+}
+
+function openModal(r) {
+  if (typeof r === 'string') r = JSON.parse(r);
+  modalResId = r.id;
+  const parts = r.date.split('-');
+  const d = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+  const dateStr = d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  document.getElementById('m-objet').textContent = r.objet;
+  document.getElementById('m-meta').textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+  document.getElementById('m-who').textContent = r.collaborateur;
+  document.getElementById('m-time').textContent = `${r.heure_debut} – ${r.heure_fin}`;
+
+  const btnAnnuler = document.getElementById('m-annuler');
+  btnAnnuler.style.display = r.collaborateur === CURRENT_USER ? 'block' : 'none';
+  document.getElementById('modal').classList.add('active');
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('active');
+  modalResId = null;
+}
+
+async function annulerFromModal() {
+  if (!modalResId) return;
+  if (!confirm('Confirmer l\'annulation ?')) return;
+  const res = await fetch(`/api/annuler/${modalResId}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (data.success) { closeModal(); renderWeek(); }
+  else alert(data.error || 'Erreur lors de l\'annulation');
+}
+
+document.getElementById('modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+init();
+</script>
+</body>
+</html>
