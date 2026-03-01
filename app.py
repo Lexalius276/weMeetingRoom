@@ -42,10 +42,17 @@ def init_db():
             heure_fin TEXT NOT NULL,
             collaborateur TEXT NOT NULL,
             objet TEXT NOT NULL,
+            type TEXT NOT NULL DEFAULT 'reunion',
             created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     """)
     conn.commit()
+    # Migration : ajouter colonne type si elle n'existe pas
+    try:
+        conn.execute("ALTER TABLE reservations ADD COLUMN type TEXT NOT NULL DEFAULT 'reunion'")
+        conn.commit()
+    except:
+        pass  # Colonne déjà présente
     conn.close()
 
 @app.route("/")
@@ -95,6 +102,9 @@ def reserver():
     heure_debut = (data.get("heure_debut") or "").strip()
     heure_fin = (data.get("heure_fin") or "").strip()
     objet = (data.get("objet") or "").strip()
+    type_res = (data.get("type") or "reunion").strip()
+    if type_res not in ("reunion", "event"):
+        type_res = "reunion"
     collaborateur = session["collaborateur"]
 
     # Objet optionnel
@@ -122,8 +132,8 @@ def reserver():
         return jsonify({"error": "Créneau déjà réservé par " + c["collaborateur"] + " (" + c["heure_debut"] + "-" + c["heure_fin"] + ")"}), 409
 
     conn.execute(
-        "INSERT INTO reservations (date, heure_debut, heure_fin, collaborateur, objet) VALUES (?, ?, ?, ?, ?)",
-        (date, heure_debut, heure_fin, collaborateur, objet)
+        "INSERT INTO reservations (date, heure_debut, heure_fin, collaborateur, objet, type) VALUES (?, ?, ?, ?, ?, ?)",
+        (date, heure_debut, heure_fin, collaborateur, objet, type_res)
     )
     conn.commit()
     conn.close()

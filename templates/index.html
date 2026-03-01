@@ -19,6 +19,8 @@
   --border: #e0d9ce;
   --red: #c0392b;
   --green: #27ae60;
+  --event: #2e86c1;
+  --event-light: #d6eaf8;
 }
 
 body {
@@ -162,13 +164,13 @@ header {
 
 /* grille calendrier */
 .cal-wrap { background: var(--card); border: 1px solid var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 24px; }
-.cal-head { display: grid; grid-template-columns: 60px repeat(5, 1fr); border-bottom: 2px solid var(--ink); }
+.cal-head { display: grid; grid-template-columns: 60px repeat(5, 1fr) 60px; border-bottom: 2px solid var(--ink); }
 .cal-head-time { background: var(--ink); }
 .cal-col-hd { padding: 10px 8px; background: var(--ink); color: white; text-align: center; border-left: 1px solid rgba(255,255,255,0.1); }
 .cal-col-hd .dn { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.5); }
 .cal-col-hd .dd { font-family: 'Playfair Display', serif; font-size: 20px; line-height: 1.1; }
 .cal-col-hd.is-today .dd { color: var(--accent); }
-.cal-body { display: grid; grid-template-columns: 60px repeat(5, 1fr); }
+.cal-body { display: grid; grid-template-columns: 60px repeat(5, 1fr) 60px; }
 .time-col { border-right: 1px solid var(--border); }
 .time-slot { height: 44px; padding: 3px 7px; font-size: 10px; color: var(--muted); text-align: right; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: flex-end; }
 .day-col { border-left: 1px solid var(--border); position: relative; }
@@ -184,8 +186,8 @@ header {
   box-shadow: 0 2px 6px rgba(26,26,46,0.18);
 }
 .res-block.is-mine { background: var(--accent-dark); border-left-color: white; }
-.rb-name { font-size: 10px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.rb-objet { font-size: 9px; color: rgba(255,255,255,0.7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-name { font-size: 12px; font-weight: 600; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-objet { font-size: 11px; color: rgba(255,255,255,0.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ═══════════════════════
    MOBILE
@@ -238,6 +240,33 @@ header {
   .hdr-user { display: none; }
   .modal-acts { flex-direction: column; }
 }
+
+/* ── RADIO TYPE ── */
+.type-radio { display: flex; flex-direction: column; gap: 8px; }
+.radio-opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px; border: 1px solid var(--border); border-radius: 2px;
+  cursor: pointer; transition: all 0.15s; background: var(--paper);
+  -webkit-tap-highlight-color: transparent;
+}
+.radio-opt:hover { border-color: var(--accent); background: var(--accent-light); }
+.radio-opt.event:hover { border-color: var(--event); background: var(--event-light); }
+.radio-opt input[type=radio] { display: none; }
+.radio-dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--border); flex-shrink: 0;
+  transition: all 0.15s; background: white;
+}
+.radio-opt:has(input:checked) .radio-dot { border-color: var(--accent); background: var(--accent); }
+.radio-opt.event:has(input:checked) .radio-dot { border-color: var(--event); background: var(--event); }
+.radio-opt:has(input:checked) { border-color: var(--accent); background: var(--accent-light); }
+.radio-opt.event:has(input:checked) { border-color: var(--event); background: var(--event-light); }
+.radio-label { font-size: 14px; font-weight: 500; color: var(--ink); }
+
+/* Blocs événement we.law (bleu) */
+.res-block.is-event { background: var(--event); border-left-color: #1a5276; }
+.res-item.is-event { border-left-color: var(--event); }
+.res-item.is-event .ri-time { color: var(--event); }
 </style>
 </head>
 <body>
@@ -258,7 +287,22 @@ header {
     <div class="fgroup"><label>Début</label><select id="d-debut"></select></div>
     <div class="fgroup"><label>Fin</label><select id="d-fin"></select></div>
     <div class="fgroup">
-      <label>Objet <span style="font-size:10px;text-transform:none;letter-spacing:0">(optionnel)</span></label>
+      <label>Type de réservation</label>
+      <div class="type-radio">
+        <label class="radio-opt" id="d-opt-reunion">
+          <input type="radio" name="d-type" value="reunion" checked>
+          <span class="radio-dot"></span>
+          <span class="radio-label">Réunion</span>
+        </label>
+        <label class="radio-opt event" id="d-opt-event">
+          <input type="radio" name="d-type" value="event">
+          <span class="radio-dot"></span>
+          <span class="radio-label">Événement we.law</span>
+        </label>
+      </div>
+    </div>
+    <div class="fgroup">
+      <label>Précision <span style="font-size:10px;text-transform:none;letter-spacing:0">(optionnel)</span></label>
       <textarea id="d-objet" placeholder="Réunion client, appel conférence…"></textarea>
     </div>
     <div id="d-flash" class="flash"></div>
@@ -267,12 +311,12 @@ header {
 
   <div class="main-content">
     <div class="week-nav">
-      <h2 id="d-week-label">Chargement…</h2>
       <div class="nav-btns">
         <button class="nav-btn" id="d-prev">← Préc.</button>
         <button class="nav-btn today-btn" id="d-today">Aujourd'hui</button>
         <button class="nav-btn" id="d-next">Suiv. →</button>
       </div>
+      <h2 id="d-week-label">Chargement…</h2>
     </div>
 
     <div class="cal-wrap">
@@ -302,7 +346,22 @@ header {
       <div class="fgroup"><label>Début</label><select id="m-debut"></select></div>
       <div class="fgroup"><label>Fin</label><select id="m-fin"></select></div>
       <div class="fgroup">
-        <label>Objet <span style="font-size:10px;text-transform:none;letter-spacing:0">(optionnel)</span></label>
+        <label>Type de réservation</label>
+        <div class="type-radio">
+          <label class="radio-opt" id="m-opt-reunion">
+            <input type="radio" name="m-type" value="reunion" checked>
+            <span class="radio-dot"></span>
+            <span class="radio-label">Réunion</span>
+          </label>
+          <label class="radio-opt event" id="m-opt-event">
+            <input type="radio" name="m-type" value="event">
+            <span class="radio-dot"></span>
+            <span class="radio-label">Événement we.law</span>
+          </label>
+        </div>
+      </div>
+      <div class="fgroup">
+        <label>Précision <span style="font-size:10px;text-transform:none;letter-spacing:0">(optionnel)</span></label>
         <input type="text" id="m-objet" placeholder="Réunion client, appel…">
       </div>
       <div id="m-flash" class="flash"></div>
@@ -340,7 +399,7 @@ header {
 <script>
 // ── CONFIG ──
 const CURRENT_USER = "{{ current_user }}";
-const H_START = 7;
+const H_START = 8;
 const H_END   = 20;
 const SLOT_H  = 44;
 const SLOTS   = (H_END - H_START) * 2;
@@ -434,14 +493,32 @@ function init() {
   // Selects desktop
   fillSelect('d-debut', '09:00');
   fillSelect('d-fin',   '10:00');
+  document.getElementById('d-debut').onchange = () => {
+    const h = +document.getElementById('d-debut').value.split(':')[0];
+    const m =  document.getElementById('d-debut').value.split(':')[1];
+    const finH = h + 1;
+    document.getElementById('d-fin').value = finH <= H_END ? pad(finH) + ':' + m : pad(H_END) + ':00';
+  };
   const dd = document.getElementById('d-date');
   dd.value = today; dd.min = today;
+  dd.oninput = () => {
+    if (dd.value) { curMonday = getMonday(strToDate(dd.value)); renderWeek(); }
+  };
 
   // Selects mobile
   fillSelect('m-debut', '09:00');
   fillSelect('m-fin',   '10:00');
+  document.getElementById('m-debut').onchange = () => {
+    const h = +document.getElementById('m-debut').value.split(':')[0];
+    const m =  document.getElementById('m-debut').value.split(':')[1];
+    const finH = h + 1;
+    document.getElementById('m-fin').value = finH <= H_END ? pad(finH) + ':' + m : pad(H_END) + ':00';
+  };
   const md = document.getElementById('m-date');
   md.value = today; md.min = today;
+  md.oninput = () => {
+    if (md.value) { curMonday = getMonday(strToDate(md.value)); renderWeek(); }
+  };
 
   // Boutons desktop
   document.getElementById('d-prev').onclick         = () => shiftWeek(-1);
@@ -527,6 +604,10 @@ function renderCal(days) {
                    '<div class="dd">' + d.getDate() + '</div>';
     head.appendChild(el);
   });
+  // Cellule vide en haut à droite
+  const emptyHdr = document.createElement('div');
+  emptyHdr.className = 'cal-head-time';
+  head.appendChild(emptyHdr);
 
   // Body
   body.innerHTML = '';
@@ -569,7 +650,8 @@ function renderCal(days) {
       const sd = timeToSlot(r.heure_debut);
       const ed = timeToSlot(r.heure_fin);
       const block = document.createElement('div');
-      block.className = 'res-block' + (r.collaborateur === CURRENT_USER ? ' is-mine' : '');
+      const isEvent = r.type === 'event';
+      block.className = 'res-block' + (isEvent ? ' is-event' : '') + (!isEvent && r.collaborateur === CURRENT_USER ? ' is-mine' : '');
       block.style.top    = (sd * SLOT_H) + 'px';
       block.style.height = Math.max((ed - sd) * SLOT_H - 3, 16) + 'px';
       block.innerHTML = '<div class="rb-name">' + r.collaborateur + '</div>' +
@@ -580,6 +662,19 @@ function renderCal(days) {
 
     body.appendChild(col);
   });
+
+  // Colonne heures droite (miroir)
+  const tcR = document.createElement('div');
+  tcR.className = 'time-col';
+  for (let i = 0; i < SLOTS; i++) {
+    const h = H_START + Math.floor(i / 2);
+    const m = (i % 2) * 30;
+    const divR = document.createElement('div');
+    divR.className = 'time-slot';
+    divR.textContent = m === 0 ? pad(h) + ':00' : '';
+    tcR.appendChild(divR);
+  }
+  body.appendChild(tcR);
 }
 
 function renderList(targetId, days) {
@@ -601,7 +696,8 @@ function renderList(targetId, days) {
     const d = strToDate(r.date);
     const dateStr = frDate(d, {weekday:'long', day:'numeric', month:'long'});
     const item = document.createElement('div');
-    item.className = 'res-item' + (r.collaborateur === CURRENT_USER ? ' mine' : '');
+    const itemIsEvent = r.type === 'event';
+    item.className = 'res-item' + (itemIsEvent ? ' is-event' : '') + (!itemIsEvent && r.collaborateur === CURRENT_USER ? ' mine' : '');
     item.innerHTML =
       '<div class="ri-info">' +
         '<div class="ri-date">' + dateStr.charAt(0).toUpperCase() + dateStr.slice(1) + '</div>' +
@@ -616,11 +712,18 @@ function renderList(targetId, days) {
 
 // ── QUICK FILL ──
 function quickFill(date, heure) {
+  // Remplir date et heure debut
   document.getElementById('d-date').value  = date;
   document.getElementById('d-debut').value = heure;
   const h = +heure.split(':')[0];
   const m =  heure.split(':')[1];
-  if (h + 1 <= H_END) document.getElementById('d-fin').value = pad(h + 1) + ':' + m;
+  // Heure de fin = debut + 1h
+  const finH = h + 1;
+  const finVal = finH <= H_END ? pad(finH) + ':' + m : pad(H_END) + ':00';
+  document.getElementById('d-fin').value = finVal;
+  // Mettre à jour le calendrier pour afficher la semaine de la date sélectionnée
+  curMonday = getMonday(strToDate(date));
+  renderWeek();
 }
 
 // ── RÉSERVER ──
@@ -628,8 +731,15 @@ async function doReserve(pfx) {
   const date  = document.getElementById(pfx + '-date').value;
   const debut = document.getElementById(pfx + '-debut').value;
   const fin   = document.getElementById(pfx + '-fin').value;
-  const objet = document.getElementById(pfx + '-objet').value;
+  const precision = document.getElementById(pfx + '-objet').value.trim();
   const flash = pfx + '-flash';
+
+  // Lire le type sélectionné
+  const typeEls = document.querySelectorAll('input[name="' + pfx + '-type"]');
+  let typeVal = 'reunion';
+  typeEls.forEach(el => { if (el.checked) typeVal = el.value; });
+  const typeLabel = typeVal === 'event' ? 'Événement we.law' : 'Réunion';
+  const objet = precision ? typeLabel + ' — ' + precision : typeLabel;
 
   clearFlash(flash);
 
@@ -638,11 +748,20 @@ async function doReserve(pfx) {
     return;
   }
 
+  // Avertissement week-end
+  const jourSemaine = strToDate(date).getDay(); // 0=dim, 6=sam
+  if (jourSemaine === 0 || jourSemaine === 6) {
+    const nomJour = jourSemaine === 6 ? 'samedi' : 'dimanche';
+    if (!confirm('Attention : vous êtes en train de réserver un ' + nomJour + '. Ce créneau n\'apparaîtra pas dans le calendrier de la semaine. Confirmer quand même ?')) {
+      return;
+    }
+  }
+
   try {
     const resp = await fetch('/api/reserver', {
       method:  'POST',
       headers: {'Content-Type': 'application/json'},
-      body:    JSON.stringify({date, heure_debut: debut, heure_fin: fin, objet})
+      body:    JSON.stringify({date, heure_debut: debut, heure_fin: fin, objet, type: typeVal})
     });
     const data = await resp.json();
 
