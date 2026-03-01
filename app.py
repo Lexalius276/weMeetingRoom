@@ -9,6 +9,8 @@ import os
 app = Flask(__name__)
 app.secret_key = "welaw-salle-reunion-2026"
 
+import os
+os.makedirs("/var/data", exist_ok=True)
 DB_PATH = "/var/data/weroom.db"
 
 COLLABORATEURS = [
