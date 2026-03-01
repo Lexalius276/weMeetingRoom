@@ -9,7 +9,7 @@ import os
 app = Flask(__name__)
 app.secret_key = "welaw-salle-reunion-2026"
 
-DB_PATH = "weroom.db"
+DB_PATH = "/var/data/weroom.db"
 
 COLLABORATEURS = [
     "SC - Salomé CAMARA",
