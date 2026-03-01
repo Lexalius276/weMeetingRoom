@@ -1,6 +1,6 @@
 # weRoom - Agenda de réservation de salle de réunion
 # Généré le 2026-03-01 — we.law
-# Version 1.1 — objet réunion optionnel
+# Version 2.0 — compatible mobile, objet optionnel
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import sqlite3
@@ -52,7 +52,7 @@ def init_db():
 def index():
     if not session.get("collaborateur"):
         return redirect(url_for("login"))
-    return render_template("index.html", collaborateurs=COLLABORATEURS, current_user=session["collaborateur"])
+    return render_template("index.html", current_user=session["collaborateur"])
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -89,18 +89,20 @@ def get_reservations():
 def reserver():
     if not session.get("collaborateur"):
         return jsonify({"error": "Non connecté"}), 401
+
     data = request.json
-    date = data.get("date")
-    heure_debut = data.get("heure_debut")
-    heure_fin = data.get("heure_fin")
+    date = (data.get("date") or "").strip()
+    heure_debut = (data.get("heure_debut") or "").strip()
+    heure_fin = (data.get("heure_fin") or "").strip()
     objet = (data.get("objet") or "").strip()
     collaborateur = session["collaborateur"]
 
-    # Objet optionnel — valeur par défaut si vide
+    # Objet optionnel
     if not objet:
         objet = "Réunion"
 
-    if not all([date, heure_debut, heure_fin]):
+    # Validation
+    if not date or not heure_debut or not heure_fin:
         return jsonify({"error": "La date et les heures sont requises"}), 400
 
     if heure_fin <= heure_debut:
@@ -117,7 +119,7 @@ def reserver():
     if conflits:
         c = conflits[0]
         conn.close()
-        return jsonify({"error": f"Créneau déjà réservé par {c['collaborateur']} ({c['heure_debut']}-{c['heure_fin']})"}), 409
+        return jsonify({"error": "Créneau déjà réservé par " + c["collaborateur"] + " (" + c["heure_debut"] + "-" + c["heure_fin"] + ")"}), 409
 
     conn.execute(
         "INSERT INTO reservations (date, heure_debut, heure_fin, collaborateur, objet) VALUES (?, ?, ?, ?, ?)",
